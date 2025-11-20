@@ -145,7 +145,10 @@ function createSongCard(song) {
     card.className = 'card';
     card.style.position = 'relative';
     
-    const thumbnail = song.thumbnails ? song.thumbnails[0].url : '';
+    // Usar el thumbnail de mayor resolución (último en el array)
+    const thumbnail = song.thumbnails && song.thumbnails.length > 0 
+        ? song.thumbnails[song.thumbnails.length - 1].url 
+        : '';
     const title = song.title || 'Sin título';
     const artists = song.artists ? song.artists.map(a => a.name).join(', ') : 'Artista desconocido';
     const duration = song.duration || '';
@@ -200,7 +203,9 @@ function createAlbumCard(album) {
     const card = document.createElement('div');
     card.className = 'card';
     
-    const thumbnail = album.thumbnails ? album.thumbnails[0].url : '';
+    const thumbnail = album.thumbnails && album.thumbnails.length > 0
+        ? album.thumbnails[album.thumbnails.length - 1].url
+        : '';
     const title = album.title || 'Sin título';
     const artists = album.artists ? album.artists.map(a => a.name).join(', ') : '';
     const year = album.year || '';
@@ -219,7 +224,9 @@ function createArtistCard(artist) {
     const card = document.createElement('div');
     card.className = 'card';
     
-    const thumbnail = artist.thumbnails ? artist.thumbnails[0].url : '';
+    const thumbnail = artist.thumbnails && artist.thumbnails.length > 0
+        ? artist.thumbnails[artist.thumbnails.length - 1].url
+        : '';
     const name = artist.artist || artist.name || 'Sin nombre';
     
     card.innerHTML = `
