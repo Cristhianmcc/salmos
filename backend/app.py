@@ -74,43 +74,41 @@ def get_song(video_id):
 
 @app.route('/api/stream/<video_id>', methods=['GET'])
 def get_stream_url(video_id):
-    """Redirigir a proxy de streaming de YouTube"""
+    """Obtener URL de streaming usando yt-dlp con configuración mejorada"""
     try:
-        # Usar Invidious como proxy de streaming (más confiable en producción)
-        invidious_instances = [
-            'https://invidious.privacyredirect.com',
-            'https://vid.puffyan.us',
-            'https://invidious.snopyta.org',
-            'https://yewtu.be'
-        ]
+        youtube_url = f'https://www.youtube.com/watch?v={video_id}'
         
-        # Intentar obtener la URL de stream directamente
+        # Configuración mejorada de yt-dlp para evitar detección de bot
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'geo_bypass': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+        
         try:
-            youtube_url = f'https://www.youtube.com/watch?v={video_id}'
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-                'no_warnings': True,
-                'extract_flat': False,
-            }
-            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)
                 
                 # Buscar la mejor URL de audio
+                stream_url = None
                 if 'url' in info:
                     stream_url = info['url']
                 elif 'formats' in info:
-                    audio_formats = [f for f in info['formats'] if f.get('acodec') != 'none']
+                    # Buscar formato de audio específico (140 = m4a audio 128k)
+                    audio_formats = [f for f in info['formats'] 
+                                   if f.get('acodec') != 'none' and f.get('vcodec') == 'none']
                     if audio_formats:
+                        # Preferir formato 140 (m4a 128k) o el de mejor calidad
                         best_audio = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
-                        stream_url = best_audio['url']
-                    else:
-                        stream_url = info['formats'][-1]['url']
-                else:
-                    stream_url = None
+                        stream_url = best_audio.get('url')
                 
                 if stream_url:
+                    print(f"✅ Stream directo obtenido para {video_id}")
                     return jsonify({
                         'videoId': video_id,
                         'streamUrl': stream_url,
@@ -118,16 +116,36 @@ def get_stream_url(video_id):
                         'title': info.get('title', ''),
                         'duration': info.get('duration', 0)
                     })
+                    
         except Exception as e:
-            print(f"⚠️ Error obteniendo stream directo: {e}")
+            error_msg = str(e)
+            print(f"⚠️ Error con yt-dlp: {error_msg}")
+            
+            # Si YouTube pide autenticación, usar URL de embed directamente
+            if 'Sign in' in error_msg or 'bot' in error_msg:
+                print(f"🔒 YouTube bloqueó el acceso, usando embed para {video_id}")
+                return jsonify({
+                    'videoId': video_id,
+                    'embedUrl': f'https://www.youtube.com/watch?v={video_id}',
+                    'method': 'embed',
+                    'message': 'YouTube requiere abrir en navegador'
+                })
         
-        # Fallback 1: Usar primer Invidious instance
-        print(f"📡 Usando Invidious proxy para {video_id}")
+        # Fallback final: URL de YouTube directo
+        print(f"📺 Usando URL de YouTube directo para {video_id}")
         return jsonify({
             'videoId': video_id,
-            'streamUrl': f'{invidious_instances[0]}/latest_version?id={video_id}&itag=140',
-            'method': 'invidious'
+            'embedUrl': f'https://www.youtube.com/watch?v={video_id}',
+            'method': 'youtube'
         })
+        
+    except Exception as e:
+        print(f"❌ Error general en stream: {e}")
+        return jsonify({
+            'videoId': video_id,
+            'embedUrl': f'https://www.youtube.com/watch?v={video_id}',
+            'method': 'fallback'
+        }), 200
         
     except Exception as e:
         print(f"❌ Error en stream: {e}")
