@@ -74,20 +74,26 @@ def get_song(video_id):
 
 @app.route('/api/stream/<video_id>', methods=['GET'])
 def get_stream_url(video_id):
-    """Obtener URL de streaming para una canción usando yt-dlp"""
+    """Redirigir a proxy de streaming de YouTube"""
     try:
-        # Construir URL de YouTube
-        youtube_url = f'https://www.youtube.com/watch?v={video_id}'
+        # Usar Invidious como proxy de streaming (más confiable en producción)
+        invidious_instances = [
+            'https://invidious.privacyredirect.com',
+            'https://vid.puffyan.us',
+            'https://invidious.snopyta.org',
+            'https://yewtu.be'
+        ]
         
-        # Configuración de yt-dlp
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': False,
-        }
-        
+        # Intentar obtener la URL de stream directamente
         try:
+            youtube_url = f'https://www.youtube.com/watch?v={video_id}'
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': False,
+            }
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)
                 
@@ -95,7 +101,6 @@ def get_stream_url(video_id):
                 if 'url' in info:
                     stream_url = info['url']
                 elif 'formats' in info:
-                    # Buscar el mejor formato de audio
                     audio_formats = [f for f in info['formats'] if f.get('acodec') != 'none']
                     if audio_formats:
                         best_audio = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
@@ -109,21 +114,29 @@ def get_stream_url(video_id):
                     return jsonify({
                         'videoId': video_id,
                         'streamUrl': stream_url,
-                        'method': 'yt-dlp',
+                        'method': 'direct',
                         'title': info.get('title', ''),
                         'duration': info.get('duration', 0)
                     })
         except Exception as e:
-            print(f"Error con yt-dlp: {e}")
+            print(f"⚠️ Error obteniendo stream directo: {e}")
         
-        # Fallback: devolver URL de embed de YouTube
+        # Fallback 1: Usar primer Invidious instance
+        print(f"📡 Usando Invidious proxy para {video_id}")
+        return jsonify({
+            'videoId': video_id,
+            'streamUrl': f'{invidious_instances[0]}/latest_version?id={video_id}&itag=140',
+            'method': 'invidious'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error en stream: {e}")
+        # Fallback final: embed de YouTube
         return jsonify({
             'videoId': video_id,
             'embedUrl': f'https://www.youtube.com/embed/{video_id}',
             'method': 'embed'
         })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/artist/<browse_id>', methods=['GET'])
 def get_artist(browse_id):
