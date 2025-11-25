@@ -11,11 +11,8 @@ let currentIndex = 0;
 
 // Elementos del DOM
 const searchInput = document.getElementById('searchInput');
-const searchBtn = document.getElementById('searchBtn');
-const searchType = document.getElementById('searchType');
 const searchResults = document.getElementById('searchResults');
 const homeContent = document.getElementById('homeContent');
-const chartsContent = document.getElementById('chartsContent');
 
 const playBtn = document.getElementById('playBtn');
 const prevBtn = document.getElementById('prevBtn');
@@ -29,6 +26,16 @@ const playerTitle = document.getElementById('playerTitle');
 const playerArtist = document.getElementById('playerArtist');
 const playerThumbnail = document.getElementById('playerThumbnail');
 
+// Elementos del panel de letras
+const lyricsBtn = document.getElementById('lyricsBtn');
+const lyricsPanel = document.getElementById('lyricsPanel');
+const closeLyricsBtn = document.getElementById('closeLyricsBtn');
+const lyricsSongTitle = document.getElementById('lyricsSongTitle');
+const lyricsSongArtist = document.getElementById('lyricsSongArtist');
+const lyricsText = document.getElementById('lyricsText');
+const lyricsTabs = document.querySelectorAll('.lyrics-tab');
+const lyricsTabContents = document.querySelectorAll('.lyrics-tab-content');
+
 // Variables del player
 let playerIframe = null;
 
@@ -40,10 +47,10 @@ function getHistory() {
 
 function saveToHistory(song) {
     let history = getHistory();
-    
+
     // Evitar duplicados - actualizar si ya existe
     history = history.filter(s => s.videoId !== song.videoId);
-    
+
     // Agregar al inicio
     history.unshift({
         videoId: song.videoId,
@@ -52,12 +59,12 @@ function saveToHistory(song) {
         thumbnail: song.thumbnail,
         playedAt: new Date().toISOString()
     });
-    
+
     // Mantener solo las últimas 50 canciones
     if (history.length > 50) {
         history = history.slice(0, 50);
     }
-    
+
     localStorage.setItem('musicHistory', JSON.stringify(history));
 }
 
@@ -69,7 +76,7 @@ function getLikedSongs() {
 function toggleLike(song) {
     let liked = getLikedSongs();
     const index = liked.findIndex(s => s.videoId === song.videoId);
-    
+
     if (index > -1) {
         // Ya está en favoritos, remover
         liked.splice(index, 1);
@@ -100,7 +107,7 @@ function isLiked(videoId) {
 function initPlayerElements() {
     playerIframe = document.getElementById('ytPlayer');
     console.log('✅ Reproductor listo');
-    
+
     // Cargar contenido de inicio automáticamente
     loadHome();
 }
@@ -143,28 +150,26 @@ async function getCharts(country = 'US') {
 function createSongCard(song) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.position = 'relative';
-    
+
     // Usar el thumbnail de mayor resolución (último en el array)
-    const thumbnail = song.thumbnails && song.thumbnails.length > 0 
-        ? song.thumbnails[song.thumbnails.length - 1].url 
+    const thumbnail = song.thumbnails && song.thumbnails.length > 0
+        ? song.thumbnails[song.thumbnails.length - 1].url
         : '';
     const title = song.title || 'Sin título';
     const artists = song.artists ? song.artists.map(a => a.name).join(', ') : 'Artista desconocido';
     const duration = song.duration || '';
     const videoId = song.videoId || '';
     const liked = isLiked(videoId);
-    
+
     card.innerHTML = `
-        <img src="${thumbnail}" alt="${title}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect width=%22200%22 height=%22200%22 fill=%22%23282828%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23b3b3b3%22 font-size=%2220%22%3E🎵%3C/text%3E%3C/svg%3E'">
-        <button class="like-btn" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; z-index: 10;">
-            ${liked ? '❤️' : '🤍'}
-        </button>
+        <div class="card-image-container">
+            <img src="${thumbnail}" alt="${title}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect width=%22200%22 height=%22200%22 fill=%22%23282828%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23b3b3b3%22 font-size=%2220%22%3E🎵%3C/text%3E%3C/svg%3E'">
+            <button class="card-play-button" title="Reproducir">▶</button>
+        </div>
         <div class="card-title">${title}</div>
         <div class="card-subtitle">${artists}</div>
-        <div class="card-info">${duration}</div>
     `;
-    
+
     // Click en la tarjeta para reproducir
     card.addEventListener('click', (e) => {
         // No reproducir si se hizo click en el botón de like
@@ -172,69 +177,53 @@ function createSongCard(song) {
             playSong(videoId, title, artists, thumbnail);
         }
     });
-    
-    // Click en el botón de like
-    const likeBtn = card.querySelector('.like-btn');
-    likeBtn.addEventListener('click', (e) => {
+
+    // Click en el botón de play
+    const playButton = card.querySelector('.card-play-button');
+    playButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        const isNowLiked = toggleLike({
-            videoId,
-            title,
-            artist: artists,
-            thumbnail
-        });
-        likeBtn.textContent = isNowLiked ? '❤️' : '🤍';
-        
-        // Recargar la sección activa para ver cambios en tiempo real
-        const homeSection = document.getElementById('homeSection');
-        const librarySection = document.getElementById('librarySection');
-        
-        if (homeSection && homeSection.classList.contains('active')) {
-            loadHome();
-        } else if (librarySection && librarySection.classList.contains('active')) {
-            loadLibrary();
-        }
+        playSong(videoId, title, artists, thumbnail);
     });
-    
+
     return card;
 }
 
 function createAlbumCard(album) {
     const card = document.createElement('div');
     card.className = 'card';
-    
+
     const thumbnail = album.thumbnails && album.thumbnails.length > 0
         ? album.thumbnails[album.thumbnails.length - 1].url
         : '';
     const title = album.title || 'Sin título';
     const artists = album.artists ? album.artists.map(a => a.name).join(', ') : '';
     const year = album.year || '';
-    
+
     card.innerHTML = `
         <img src="${thumbnail}" alt="${title}">
         <div class="card-title">${title}</div>
         <div class="card-subtitle">${artists}</div>
         <div class="card-info">${year}</div>
     `;
-    
+
     return card;
 }
 
 function createArtistCard(artist) {
     const card = document.createElement('div');
     card.className = 'card';
-    
+
     const thumbnail = artist.thumbnails && artist.thumbnails.length > 0
         ? artist.thumbnails[artist.thumbnails.length - 1].url
         : '';
     const name = artist.artist || artist.name || 'Sin nombre';
-    
+
     card.innerHTML = `
         <img src="${thumbnail}" alt="${name}" style="border-radius: 50%;">
         <div class="card-title">${name}</div>
         <div class="card-subtitle">Artista</div>
     `;
-    
+
     return card;
 }
 
@@ -244,20 +233,27 @@ async function playSong(videoId, title, artist, thumbnail) {
     playerTitle.textContent = title;
     playerArtist.textContent = artist;
     playerThumbnail.src = thumbnail;
-    
+
     console.log('▶️ Cargando:', title);
-    
+
+    // Actualizar información en el panel de letras
+    lyricsSongTitle.textContent = title;
+    lyricsSongArtist.textContent = artist;
+
+    // Cargar letras automáticamente
+    await loadLyrics(videoId, artist, title);
+
     try {
         // Obtener URL de streaming desde el backend
         const response = await fetch(`${API_URL}/stream/${videoId}`);
         const data = await response.json();
-        
+
         if (data.error) {
             console.error('❌ Error:', data.error);
             alert('No se pudo cargar la canción. Intenta con otra.');
             return;
         }
-        
+
         // Crear o actualizar el elemento de audio
         let audioPlayer = document.getElementById('audioPlayer');
         if (!audioPlayer) {
@@ -266,14 +262,14 @@ async function playSong(videoId, title, artist, thumbnail) {
             audioPlayer.controls = false;
             document.body.appendChild(audioPlayer);
         }
-        
+
         // Establecer la fuente y reproducir
         audioPlayer.src = data.streamUrl || data.url;
         audioPlayer.play();
-        
+
         isPlaying = true;
         playBtn.textContent = '⏸️';
-        
+
         // Guardar en historial
         saveToHistory({
             videoId,
@@ -281,14 +277,14 @@ async function playSong(videoId, title, artist, thumbnail) {
             artist,
             thumbnail
         });
-        
+
         // Event listeners del audio
         audioPlayer.addEventListener('timeupdate', updateProgress);
         audioPlayer.addEventListener('ended', playNext);
         audioPlayer.addEventListener('loadedmetadata', () => {
             duration.textContent = formatTime(audioPlayer.duration);
         });
-        
+
         console.log('✅ Reproduciendo:', title);
     } catch (error) {
         console.error('❌ Error reproduciendo:', error);
@@ -299,7 +295,7 @@ async function playSong(videoId, title, artist, thumbnail) {
 function updateProgress() {
     const audioPlayer = document.getElementById('audioPlayer');
     if (!audioPlayer) return;
-    
+
     const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
     progressBar.value = progress;
     currentTime.textContent = formatTime(audioPlayer.currentTime);
@@ -307,12 +303,12 @@ function updateProgress() {
 
 function togglePlay() {
     const audioPlayer = document.getElementById('audioPlayer');
-    
+
     if (!audioPlayer || !currentVideoId) {
         console.warn('⚠️ No hay ninguna canción seleccionada');
         return;
     }
-    
+
     if (isPlaying) {
         audioPlayer.pause();
         playBtn.textContent = '▶️';
@@ -360,56 +356,43 @@ function formatTime(seconds) {
 }
 
 // Event Listeners
-searchBtn.addEventListener('click', async () => {
-    const query = searchInput.value.trim();
-    if (!query) return;
-    
-    searchResults.innerHTML = '<p class="loading">Buscando</p>';
-    showSection('search');
-    
-    try {
-        const results = await searchMusic(query, searchType.value);
-        
-        searchResults.innerHTML = '';
-        
-        if (!results || !Array.isArray(results) || results.length === 0) {
-            searchResults.innerHTML = '<p>No se encontraron resultados para "' + query + '"</p>';
-            return;
-        }
-        
-        playlist = [];
-        results.forEach((item, index) => {
-        let card;
-        
-        if (searchType.value === 'songs') {
-            card = createSongCard(item);
-            playlist.push({
-                videoId: item.videoId,
-                title: item.title,
-                artist: item.artists ? item.artists.map(a => a.name).join(', ') : '',
-                thumbnail: item.thumbnails ? item.thumbnails[0].url : ''
-            });
-        } else if (searchType.value === 'albums') {
-            card = createAlbumCard(item);
-        } else if (searchType.value === 'artists') {
-            card = createArtistCard(item);
-        } else {
-            card = createSongCard(item);
-        }
-        
-        searchResults.appendChild(card);
-    });
-    } catch (error) {
-        console.error('Error en búsqueda:', error);
-        searchResults.innerHTML = '<p>❌ Error al buscar. Intenta de nuevo.</p>';
-    }
-});
+if (searchInput) {
+    searchInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (!query) return;
 
-searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        searchBtn.click();
-    }
-});
+            searchResults.innerHTML = '<p class="loading">Buscando</p>';
+            showSection('search');
+
+            try {
+                const results = await searchMusic(query, 'songs');
+
+                searchResults.innerHTML = '';
+
+                if (!results || !Array.isArray(results) || results.length === 0) {
+                    searchResults.innerHTML = '<p>No se encontraron resultados para "' + query + '"</p>';
+                    return;
+                }
+
+                playlist = [];
+                results.forEach((item, index) => {
+                    const card = createSongCard(item);
+                    playlist.push({
+                        videoId: item.videoId,
+                        title: item.title,
+                        artist: item.artists ? item.artists.map(a => a.name).join(', ') : '',
+                        thumbnail: item.thumbnails ? item.thumbnails[0].url : ''
+                    });
+                    searchResults.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error en búsqueda:', error);
+                searchResults.innerHTML = '<p>❌ Error al buscar. Intenta de nuevo.</p>';
+            }
+        }
+    });
+}
 
 playBtn.addEventListener('click', togglePlay);
 nextBtn.addEventListener('click', playNext);
@@ -419,7 +402,7 @@ prevBtn.addEventListener('click', playPrev);
 progressBar.addEventListener('input', (e) => {
     const audioPlayer = document.getElementById('audioPlayer');
     if (!audioPlayer) return;
-    
+
     const time = (e.target.value / 100) * audioPlayer.duration;
     audioPlayer.currentTime = time;
 });
@@ -427,9 +410,9 @@ progressBar.addEventListener('input', (e) => {
 volumeBar.addEventListener('input', (e) => {
     const audioPlayer = document.getElementById('audioPlayer');
     if (!audioPlayer) return;
-    
+
     audioPlayer.volume = e.target.value / 100;
-    
+
     // Actualizar ícono de mute
     if (audioPlayer.volume === 0) {
         muteBtn.textContent = '🔇';
@@ -443,7 +426,7 @@ volumeBar.addEventListener('input', (e) => {
 muteBtn.addEventListener('click', () => {
     const audioPlayer = document.getElementById('audioPlayer');
     if (!audioPlayer) return;
-    
+
     if (audioPlayer.volume > 0) {
         audioPlayer.dataset.previousVolume = audioPlayer.volume;
         audioPlayer.volume = 0;
@@ -462,19 +445,17 @@ document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', async (e) => {
         e.preventDefault();
         const section = link.dataset.section;
-        
+
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
-        
+
         showSection(section);
-        
+
         // Cargar contenido según la sección
         if (section === 'home') {
             await loadHome();
         } else if (section === 'library') {
             await loadLibrary();
-        } else if (section === 'charts' && chartsContent.innerHTML.includes('Cargando')) {
-            await loadCharts();
         }
     });
 });
@@ -486,26 +467,26 @@ function showSection(sectionName) {
 
 async function loadHome() {
     homeContent.innerHTML = '<p class="loading">Cargando tu música...</p>';
-    
+
     try {
         homeContent.innerHTML = '';
-        
+
         const history = getHistory();
         const likedSongs = getLikedSongs();
-        
+
         // Sección de canciones favoritas
         if (likedSongs.length > 0) {
             const likedSection = document.createElement('div');
             likedSection.style.marginBottom = '30px';
-            
+
             const title = document.createElement('h3');
             title.innerHTML = '❤️ Tus canciones favoritas';
             title.style.marginBottom = '15px';
             likedSection.appendChild(title);
-            
+
             const grid = document.createElement('div');
             grid.className = 'content-grid';
-            
+
             likedSongs.slice(0, 12).forEach(song => {
                 const card = createSongCard({
                     videoId: song.videoId,
@@ -516,24 +497,24 @@ async function loadHome() {
                 });
                 grid.appendChild(card);
             });
-            
+
             likedSection.appendChild(grid);
             homeContent.appendChild(likedSection);
         }
-        
+
         // Sección de reproducidos recientemente
         if (history.length > 0) {
             const historySection = document.createElement('div');
             historySection.style.marginBottom = '30px';
-            
+
             const title = document.createElement('h3');
             title.innerHTML = '🕐 Reproducidos recientemente';
             title.style.marginBottom = '15px';
             historySection.appendChild(title);
-            
+
             const grid = document.createElement('div');
             grid.className = 'content-grid';
-            
+
             history.slice(0, 12).forEach(song => {
                 const card = createSongCard({
                     videoId: song.videoId,
@@ -544,11 +525,11 @@ async function loadHome() {
                 });
                 grid.appendChild(card);
             });
-            
+
             historySection.appendChild(grid);
             homeContent.appendChild(historySection);
         }
-        
+
         // Si no hay nada
         if (history.length === 0 && likedSongs.length === 0) {
             homeContent.innerHTML = `
@@ -569,28 +550,28 @@ async function loadHome() {
 async function loadCharts() {
     chartsContent.innerHTML = '<p class="loading">Cargando charts</p>';
     const chartsData = await getCharts();
-    
+
     chartsContent.innerHTML = '';
-    
+
     if (chartsData && chartsData.length > 0) {
         chartsData.forEach(chart => {
             if (chart.items) {
                 const chartDiv = document.createElement('div');
                 chartDiv.style.marginBottom = '30px';
-                
+
                 const title = document.createElement('h3');
                 title.textContent = chart.title || 'Top Songs';
                 title.style.marginBottom = '15px';
                 chartDiv.appendChild(title);
-                
+
                 const grid = document.createElement('div');
                 grid.className = 'content-grid';
-                
+
                 chart.items.slice(0, 10).forEach(item => {
                     const card = createSongCard(item);
                     grid.appendChild(card);
                 });
-                
+
                 chartDiv.appendChild(grid);
                 chartsContent.appendChild(chartDiv);
             }
@@ -603,15 +584,15 @@ async function loadCharts() {
 async function loadLibrary() {
     const libraryContent = document.getElementById('libraryContent');
     libraryContent.innerHTML = '<p class="loading">Cargando tu biblioteca...</p>';
-    
+
     try {
         const likedSongs = getLikedSongs();
         libraryContent.innerHTML = '';
-        
+
         if (likedSongs.length > 0) {
             const grid = document.createElement('div');
             grid.className = 'content-grid';
-            
+
             likedSongs.forEach(song => {
                 const card = createSongCard({
                     videoId: song.videoId,
@@ -622,7 +603,7 @@ async function loadLibrary() {
                 });
                 grid.appendChild(card);
             });
-            
+
             libraryContent.appendChild(grid);
         } else {
             libraryContent.innerHTML = `
@@ -644,4 +625,116 @@ window.addEventListener('load', async () => {
     console.log('✅ Página cargada');
     initPlayerElements();
     await loadHome();
+    initLyricsPanel();
 });
+
+// ============================================
+// FUNCIONES DEL PANEL DE LETRAS
+// ============================================
+
+function initLyricsPanel() {
+    // Abrir/cerrar panel de letras
+    if (lyricsBtn) {
+        lyricsBtn.addEventListener('click', toggleLyricsPanel);
+    }
+
+    if (closeLyricsBtn) {
+        closeLyricsBtn.addEventListener('click', closeLyricsPanel);
+    }
+
+    // Tabs de letras
+    lyricsTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            switchLyricsTab(tabName);
+        });
+    });
+}
+
+function toggleLyricsPanel() {
+    const container = document.querySelector('.container');
+    lyricsPanel.classList.toggle('active');
+    
+    if (lyricsPanel.classList.contains('active')) {
+        container.classList.add('lyrics-open');
+        console.log('📝 Panel de letras abierto');
+    } else {
+        container.classList.remove('lyrics-open');
+        console.log('📝 Panel de letras cerrado');
+    }
+}
+
+function closeLyricsPanel() {
+    const container = document.querySelector('.container');
+    lyricsPanel.classList.remove('active');
+    container.classList.remove('lyrics-open');
+    console.log('📝 Panel de letras cerrado');
+}
+
+function switchLyricsTab(tabName) {
+    // Actualizar tabs activas
+    lyricsTabs.forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    // Actualizar contenido visible
+    lyricsTabContents.forEach(content => {
+        if (content.id === `${tabName}Tab`) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
+}
+
+async function loadLyrics(videoId, artist, title) {
+    console.log('🎤 Cargando letras para:', title, '-', artist);
+
+    // Mostrar mensaje de carga
+    lyricsText.innerHTML = '<p class="lyrics-loading">Cargando letras</p>';
+
+    try {
+        // Intentar obtener letras del backend
+        const response = await fetch(`${API_URL}/lyrics/search?videoId=${encodeURIComponent(videoId)}&artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.lyrics) {
+                console.log('✅ Letras encontradas desde:', data.source);
+                displayLyrics(data.lyrics);
+            } else {
+                console.warn('⚠️ No se encontraron letras');
+                lyricsText.innerHTML = '<p class="lyrics-error">No se encontraron letras para esta canción</p>';
+            }
+        } else {
+            console.warn('⚠️ Error obteniendo letras:', response.status);
+            lyricsText.innerHTML = '<p class="lyrics-error">No se pudieron cargar las letras</p>';
+        }
+    } catch (error) {
+        console.error('❌ Error cargando letras:', error);
+        lyricsText.innerHTML = '<p class="lyrics-error">Error al cargar las letras</p>';
+    }
+}
+
+function displayLyrics(lyricsContent) {
+    // Limpiar y formatear las letras
+    const cleanLyrics = lyricsContent.trim();
+    
+    // Dividir en párrafos y formatear
+    const paragraphs = cleanLyrics.split(/\n\n+/);
+    
+    let formattedLyrics = '';
+    paragraphs.forEach(paragraph => {
+        const lines = paragraph.split('\n').filter(line => line.trim() !== '');
+        if (lines.length > 0) {
+            formattedLyrics += `<p>${lines.join('<br>')}</p>`;
+        }
+    });
+
+    lyricsText.innerHTML = formattedLyrics || '<p class="lyrics-error">No se pudieron cargar las letras</p>';
+}

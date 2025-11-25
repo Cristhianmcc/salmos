@@ -3,62 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salmos</title>
+    <title>Salmos - Music Streaming</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <h1>🎵 Salmos</h1>
-            </div>
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Buscar canciones, artistas, álbumes...">
-                <select id="searchType">
-                    <option value="songs">Canciones</option>
-                    <option value="artists">Artistas</option>
-                    <option value="albums">Álbumes</option>
-                    <option value="playlists">Playlists</option>
-                </select>
-                <button id="searchBtn">Buscar</button>
-            </div>
-        </header>
-
-        <!-- Navigation -->
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🎵</div>
+                <h1>Salmos</h1>
+            </div>
+            
             <ul>
-                <li><a href="#" data-section="home" class="nav-link active">🏠 Principal</a></li>
-                <li><a href="#" data-section="search" class="nav-link">🔍 Explorar</a></li>
-                <li><a href="#" data-section="library" class="nav-link">📚 Biblioteca</a></li>
+                <li><button data-section="home" class="nav-link active">🏠 Inicio</button></li>
+                <li><button data-section="search" class="nav-link">🔍 Buscar</button></li>
+                <li><button data-section="library" class="nav-link">📚 Tu biblioteca</button></li>
             </ul>
+
+            <hr>
+
+            <div class="playlists-section">
+                <div class="playlists-header">
+                    <span>Playlists</span>
+                    <button id="addPlaylistBtn">+</button>
+                </div>
+                <ul>
+                    <li><button class="nav-link">💚 Canciones que te gustan</button></li>
+                    <li><button class="nav-link">Rock Classics</button></li>
+                    <li><button class="nav-link">Chill Vibes</button></li>
+                    <li><button class="nav-link">Workout Mix</button></li>
+                    <li><button class="nav-link">Late Night Jazz</button></li>
+                </ul>
+            </div>
         </nav>
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Home Section -->
             <div id="homeSection" class="section active">
-                <h2>Inicio</h2>
+                <h2>Buenos días</h2>
                 <div id="homeContent" class="content-grid">
-                    <p>Cargando contenido...</p>
+                    <p class="loading">Cargando contenido</p>
                 </div>
             </div>
 
-            <div id="chartsSection" class="section">
-                <h2>Top Charts</h2>
-                <div id="chartsContent" class="content-grid">
-                    <p>Cargando charts...</p>
-                </div>
-            </div>
-
+            <!-- Search Section -->
             <div id="searchSection" class="section">
-                <h2>Resultados de Búsqueda</h2>
+                <h2>Buscar</h2>
+                <div class="search-bar" style="margin-bottom: 2rem;">
+                    <input type="text" id="searchInput" placeholder="¿Qué quieres escuchar?" style="width: 100%; max-width: 500px; padding: 0.75rem 1rem; border-radius: 2rem; border: none; background: var(--card); color: var(--foreground);">
+                </div>
                 <div id="searchResults" class="content-grid">
                     <p>Utiliza la barra de búsqueda para encontrar música</p>
                 </div>
             </div>
 
+            <!-- Library Section -->
             <div id="librarySection" class="section">
-                <h2>Mi Biblioteca</h2>
+                <h2>Tu Biblioteca</h2>
                 <div id="libraryContent" class="content-grid">
                     <p>Tu biblioteca está vacía</p>
                 </div>
@@ -67,6 +73,7 @@
 
         <!-- Player -->
         <footer class="player">
+            <!-- Track Info -->
             <div class="player-info">
                 <img id="playerThumbnail" src="" alt="Album Art" class="player-thumbnail">
                 <div class="player-details">
@@ -75,24 +82,30 @@
                 </div>
             </div>
             
+            <!-- Playback Controls -->
             <div class="player-controls">
-                <button id="prevBtn" class="control-btn">⏮️</button>
-                <button id="playBtn" class="control-btn play-btn">▶️</button>
-                <button id="nextBtn" class="control-btn">⏭️</button>
+                <div class="player-buttons">
+                    <button id="shuffleBtn" class="control-btn" title="Aleatorio">🔀</button>
+                    <button id="prevBtn" class="control-btn" title="Anterior">⏮️</button>
+                    <button id="playBtn" class="control-btn play-btn" title="Reproducir">▶️</button>
+                    <button id="nextBtn" class="control-btn" title="Siguiente">⏭️</button>
+                    <button id="repeatBtn" class="control-btn" title="Repetir">🔁</button>
+                </div>
+                <div class="player-progress">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progressBar" class="progress-bar" min="0" max="100" value="0">
+                    <span id="duration">0:00</span>
+                </div>
             </div>
 
-            <div class="player-progress">
-                <span id="currentTime">0:00</span>
-                <input type="range" id="progressBar" class="progress-bar" min="0" max="100" value="0">
-                <span id="duration">0:00</span>
-            </div>
-
+            <!-- Volume Controls -->
             <div class="player-volume">
-                <button id="muteBtn" class="control-btn">🔊</button>
+                <button id="lyricsBtn" class="control-btn" title="Ver letra">📝</button>
+                <button id="muteBtn" class="control-btn" title="Silenciar">🔊</button>
                 <input type="range" id="volumeBar" class="volume-bar" min="0" max="100" value="70">
             </div>
 
-            <!-- Reproductor integrado (oculto, solo audio) -->
+            <!-- Hidden YouTube Player -->
             <iframe id="ytPlayer" 
                     style="display: none;"
                     width="0" 
@@ -102,9 +115,36 @@
                     allowfullscreen>
             </iframe>
         </footer>
+
+        <!-- Lyrics Panel -->
+        <aside id="lyricsPanel" class="lyrics-panel">
+            <div class="lyrics-header">
+                <div class="lyrics-tabs">
+                    <button class="lyrics-tab active" data-tab="letra">LETRA</button>
+                    <button class="lyrics-tab" data-tab="relacionado">RELACIONADO</button>
+                </div>
+                <button id="closeLyricsBtn" class="close-lyrics-btn" title="Cerrar">✕</button>
+            </div>
+            <div class="lyrics-content">
+                <div id="lyricsTab" class="lyrics-tab-content active">
+                    <div class="lyrics-song-info">
+                        <h2 id="lyricsSongTitle">Selecciona una canción</h2>
+                        <p id="lyricsSongArtist">-</p>
+                    </div>
+                    <div id="lyricsText" class="lyrics-text">
+                        <p class="lyrics-placeholder">Las letras aparecerán aquí cuando reproduzcas una canción</p>
+                    </div>
+                </div>
+                <div id="relacionadoTab" class="lyrics-tab-content">
+                    <div id="relacionadoContent" class="relacionado-content">
+                        <p class="lyrics-placeholder">Contenido relacionado aparecerá aquí</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <!-- JavaScript principal -->
+    <!-- JavaScript -->
     <script src="/js/app.js"></script>
 </body>
 </html>
